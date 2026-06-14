@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 // ⚠️ 여기에 내 진짜 수파베이스 주소와 anon_key를 따옴표 안에 직접 넣어주세요!
-const SUPABASE_URL = "sb_publishable_hQuPbnxRWi_mer2ngPnTCw_WpuX1xUY";
-const SUPABASE_KEY = "https://emhdalufbplxviwhstco.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://emhdalufbplxviwhstco.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_hQuPbnxRWi_mer2ngPnTCw_WpuX1xUY";
 
 // @ts-ignore
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
