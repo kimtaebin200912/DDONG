@@ -1,0 +1,6 @@
+{
+  "name": "Simple Notepad",
+  "description": "불필요한 기능 없이 오직 글쓰기에만 집중할 수 있는 깔끔하고 직관적인 웹 메모장입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

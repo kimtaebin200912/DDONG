@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, Cambria, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom gorgeous stationery-styled scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(180, 160, 140, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 160, 140, 0.5);
+}
+
+/* Notebook styling background patterns */
+.grid-bg {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+.lined-bg {
+  background-size: 100% 28px;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+/* Markdown beautiful typography rendering container styles */
+.note-markdown {
+  font-family: var(--font-sans);
+  line-height: 1.75;
+  color: #2d2a26;
+}
+
+.note-markdown h1 {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1a1612;
+  margin-top: 1.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #eadecf;
+  padding-bottom: 0.5rem;
+}
+
+.note-markdown h2 {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2b251f;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px dashed #e8dccb;
+  padding-bottom: 0.375rem;
+}
+
+.note-markdown p {
+  margin-bottom: 1rem;
+}
+
+.note-markdown blockquote {
+  border-left: 4px solid #bc9d7a;
+  background-color: #fcfaf7;
+  padding: 0.75rem 1.25rem;
+  margin: 1.25rem 0;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #4a4238;
+}
+
+.note-markdown ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.note-markdown ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.note-markdown li {
+  margin-bottom: 0.25rem;
+}
+
+.note-markdown li > ul, .note-markdown li > ol {
+  margin-top: 0.375rem;
+  margin-bottom: 0;
+}
+
+.note-markdown strong {
+  font-weight: 700;
+  color: #110d0a;
+  background-color: rgba(244, 230, 211, 0.6);
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+}
+
+.note-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.note-markdown th {
+  background-color: #f4ecdf;
+  color: #4a3e31;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #e1d4bf;
+}
+
+.note-markdown td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0e6d6;
+  background-color: #ffffff;
+  color: #3d352b;
+}
+
+.note-markdown tr:last-child td {
+  border-bottom: none;
+}
+
+.note-markdown tr:nth-child(even) td {
+  background-color: #fdfbf7;
+}
+
