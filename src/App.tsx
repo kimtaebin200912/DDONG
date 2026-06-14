@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Menu } from "lucide-react";
+import { Plus, Trash2, Menu, CloudLightning } from "lucide-react";
+
+// ⚠️ [필수 고치기] 내 진짜 수파베이스 정보를 여기에 정확히 복사해 넣으세요!
+const SUPABASE_URL = "내_수파베이스_주소";
+const SUPABASE_KEY = "내_수파베이스_ANON_KEY";
+
+// @ts-ignore
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 interface Note {
   id: string;
@@ -11,56 +18,65 @@ export default function App() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSaving, setIsSaving] = useState(false); // 수파베이스 저장 상태 표시용
 
-  // Load notes list on mount
+  // 1. 앱이 켜질 때 수파베이스 DB에서 최신 데이터 목록을 실시간으로 긁어옴
   useEffect(() => {
-    const saved = localStorage.getItem("minimal_notebook_list");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setNotes(parsed);
-        if (parsed.length > 0) {
-          setActiveId(parsed[0].id);
+    if (!supabaseClient) return;
+    
+    async function fetchFromSupabase() {
+      const { data, error } = await supabaseClient
+        .from("notes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        // 수파베이스의 id, title, content 구조를 내 리액트 형식에 맞춤
+        const loadedNotes: Note[] = data.map((d: any) => ({
+          id: d.id,
+          title: d.title || "",
+          content: d.content || ""
+        }));
+        
+        setNotes(loadedNotes);
+        if (loadedNotes.length > 0) {
+          setActiveId(loadedNotes[0].id);
         }
-      } catch (e) {
-        console.error("Failed to load notes", e);
+      } else {
+        // 수파베이스에 아무것도 없거나 에러나면 기본 뼈대 하나 생성
+        const initial: Note = { id: `note_initial`, title: "", content: "" };
+        setNotes([initial]);
+        setActiveId(initial.id);
       }
-    } else {
-      // Create a clean initial note
-      const initial: Note = {
-        id: "note_initial",
-        title: "",
-        content: ""
-      };
-      setNotes([initial]);
-      setActiveId(initial.id);
-      localStorage.setItem("minimal_notebook_list", JSON.stringify([initial]));
     }
+
+    fetchFromSupabase();
   }, []);
 
-  // Sync to localStorage
-  const saveNotes = (updated: Note[]) => {
-    setNotes(updated);
-    localStorage.setItem("minimal_notebook_list", JSON.stringify(updated));
+  // 2. 새 메모 버튼 클릭 시 -> 수파베이스 DB에 즉시 빈 행 하나 생성
+  const handleCreateNote = async () => {
+    if (!supabaseClient) return;
+
+    const newId = `note_${Date.now()}`;
+    const newNote: Note = { id: newId, title: "", content: "" };
+
+    // 화면에 먼저 반영
+    setNotes([newNote, ...notes]);
+    setActiveId(newId);
+
+    // 수파베이스 DB에 즉시 전송
+    await supabaseClient
+      .from("notes")
+      .insert([{ id: newId, title: "", content: "" }]);
   };
 
-  // Add a new blank note
-  const handleCreateNote = () => {
-    const newNote: Note = {
-      id: `note_${Date.now()}`,
-      title: "",
-      content: ""
-    };
-    const updated = [newNote, ...notes];
-    saveNotes(updated);
-    setActiveId(newNote.id);
-  };
-
-  // Delete note
-  const handleDeleteNote = (id: string, e: React.MouseEvent) => {
+  // 3. 메모 삭제 버튼 클릭 시 -> 수파베이스 DB에서 즉시 제거
+  const handleDeleteNote = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!supabaseClient) return;
+
     const remaining = notes.filter(n => n.id !== id);
-    saveNotes(remaining);
+    setNotes(remaining);
     
     if (activeId === id) {
       if (remaining.length > 0) {
@@ -69,18 +85,37 @@ export default function App() {
         setActiveId(null);
       }
     }
+
+    // 수파베이스 DB에서 해당 ID 데이터 삭제
+    await supabaseClient.from("notes").delete().eq("id", id);
   };
 
-  // Edit current active note fields
+  // 4. 제목이나 본문 내용을 타이핑할 때 -> 디바운스(0.5초 대기) 후 수파베이스 DB에 실시간 업데이트 저장
+  useEffect(() => {
+    if (!activeId || !supabaseClient) return;
+    const activeNote = notes.find(n => n.id === activeId);
+    if (!activeNote) return;
+
+    // 사용자가 타자를 멈추고 0.5초 뒤에 자동으로 수파베이스에 자동 저장함
+    const timeOutId = setTimeout(async () => {
+      setIsSaving(true);
+      await supabaseClient
+        .from("notes")
+        .upsert({
+          id: activeNote.id,
+          title: activeNote.title,
+          content: activeNote.content
+        });
+      setIsSaving(false);
+    }, 500);
+
+    return () => clearTimeout(timeOutId);
+  }, [notes, activeId]);
+
+  // 입력창 핸들러
   const handleEditActiveNote = (field: "title" | "content", value: string) => {
     if (!activeId) return;
-    const updated = notes.map(note => {
-      if (note.id === activeId) {
-        return { ...note, [field]: value };
-      }
-      return note;
-    });
-    saveNotes(updated);
+    setNotes(prev => prev.map(note => note.id === activeId ? { ...note, [field]: value } : note));
   };
 
   const activeNote = notes.find(n => n.id === activeId);
@@ -94,8 +129,6 @@ export default function App() {
           isSidebarOpen ? "w-64 sm:w-72" : "w-0 overflow-hidden border-r-0"
         }`}
       >
-        
-        {/* Sidebar Header & Create Action */}
         <div className="p-4 border-b border-stone-200/60 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <button
@@ -107,6 +140,7 @@ export default function App() {
               <Menu className="w-5 h-5" />
             </button>
             <h2 className="text-sm font-bold text-stone-800 tracking-tight">모든 노트</h2>
+            {isSaving && <CloudLightning className="w-3.5 h-3.5 text-emerald-500 animate-pulse" title="DB 동기화 중" />}
           </div>
           <button
             onClick={handleCreateNote}
@@ -118,12 +152,9 @@ export default function App() {
           </button>
         </div>
 
-        {/* Notes Items Feed */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {notes.length === 0 ? (
-            <div className="text-center text-xs text-stone-400 py-10">
-              메모가 없습니다.
-            </div>
+            <div className="text-center text-xs text-stone-400 py-10">메모가 없습니다.</div>
           ) : (
             notes.map((note) => {
               const isActive = activeId === note.id;
@@ -142,9 +173,7 @@ export default function App() {
                   id={`sidebar-item-${note.id}`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs sm:text-sm truncate flex-1 block leading-normal">
-                      {titleToShow}
-                    </span>
+                    <span className="text-xs sm:text-sm truncate flex-1 block leading-normal">{titleToShow}</span>
                     <button
                       onClick={(e) => handleDeleteNote(note.id, e)}
                       className="opacity-0 group-hover:opacity-100 p-1 text-stone-400 hover:text-red-600 rounded-md transition-all self-center shrink-0"
@@ -154,9 +183,7 @@ export default function App() {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <span className="text-[11px] text-stone-400 truncate mt-0.5 font-normal block">
-                    {summaryToShow}
-                  </span>
+                  <span className="text-[11px] text-stone-400 truncate mt-0.5 font-normal block">{summaryToShow}</span>
                 </div>
               );
             })
@@ -168,8 +195,6 @@ export default function App() {
       <main className="flex-1 bg-white overflow-hidden flex flex-col h-full min-w-0">
         {activeNote ? (
           <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto px-6 sm:px-12 py-10 overflow-hidden">
-            
-            {/* Minimal Title Block with Optionally Show Sidebar toggle */}
             <div className="flex items-center gap-3 shrink-0">
               {!isSidebarOpen && (
                 <button
@@ -181,7 +206,6 @@ export default function App() {
                   <Menu className="w-5 h-5" />
                 </button>
               )}
-              
               <input
                 type="text"
                 value={activeNote.title}
@@ -192,10 +216,8 @@ export default function App() {
               />
             </div>
 
-            {/* Aesthetic Single Hairline Separator */}
             <div className="h-px bg-stone-100 my-4 shrink-0" />
 
-            {/* Minimal Body Pad */}
             <div className="flex-1 overflow-hidden relative">
               <textarea
                 value={activeNote.content}
@@ -205,7 +227,6 @@ export default function App() {
                 id="editor-note-content"
               />
             </div>
-
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-stone-400 space-y-2 select-none relative">
